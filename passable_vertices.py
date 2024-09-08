@@ -1,7 +1,7 @@
 """
-==================
+========================================
 Find passable points from shape vertices
-==================
+========================================
 
 Find the points which the character can pass through 
 from the shape vertices
@@ -9,27 +9,30 @@ from the shape vertices
 """
 
 """
+------------------
 Core functionnality
+------------------
 """
 
 from shapely.geometry import Polygon
 
-shape_vertices = [
-    (0, 0),
-    (0, 4),
-    (4, 4),
-    (4, 0)
-]
+"""Input"""
+shape_vertices = [(0, 0), (0, 4), (4, 4), (4, 0)]
 player_radius = 0.5
 
+"""Calculation"""
 polygon = Polygon(shape_vertices)
 # Scale the polygon by player_radius*sqrt(2) so that it's away enough to avoid collision
 scaled_polygon = polygon.buffer(player_radius*1.4143, join_style=2)
 
+"""Output"""
 passable_points=[point[0] for point in zip(scaled_polygon.exterior.coords)]
 
+
 """
+--------------
 Debug plotting
+--------------
 """
 
 # # Plot the polygon

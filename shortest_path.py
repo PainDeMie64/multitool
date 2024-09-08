@@ -9,12 +9,13 @@ using `shortest_path` function.
 """
 
 """
+------------------
 Core functionnality
+------------------
 """
-
 import networkx as nx
 
-# Create a graph with nodes and edges
+"""Input"""
 G = nx.Graph()
 G.add_nodes_from(["A", "B", "C", "D", "E", "F", "G", "H"])
 G.add_edge("A", "B", weight=4)
@@ -32,11 +33,14 @@ G.add_edge("G", "H", weight=1)
 G.add_edge("G", "I", weight=6)
 G.add_edge("H", "I", weight=7)
 
+"""Calculation & Output"""
 # Find the shortest path from node A to node E
 path = nx.shortest_path(G, "A", "E", weight="weight")
 
 """
+--------------
 Debug plotting
+--------------
 """
 
 # import matplotlib.pyplot as plt
