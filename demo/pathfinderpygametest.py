@@ -1,9 +1,12 @@
+import math
 import numpy as np
 import numba
 import rustworkx as rx
 from shapely.geometry import Polygon
+
 import numpy as np
 import numba
+import math
 from numba.typed import List
 
 class CollisionChecker:
@@ -201,3 +204,147 @@ class Pathfinder:
         dx = next_point[0] - current_pos[0]
         dy = next_point[1] - current_pos[1]
         return (dx, dy)
+
+
+
+import pygame
+import random
+import math
+import numpy as np
+import numba
+from numba import boolean, float64
+from shapely.geometry import Polygon, Point
+import timeit
+import time
+
+pygame.init()
+
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Optimized Visibility Graph Test")
+
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+BLACK = (0, 0, 0)
+
+PLAYER_SIZE = 10
+PLAYER_SPEED = 3
+
+GOAL_SIZE = 15
+
+pygame.font.init()
+FONT = pygame.font.Font(None, 24)
+
+obstacles = [
+    np.array([[100, 100], [250, 100], [250, 250], [100, 250]], dtype=np.float64),
+    np.array([[500, 400], [650, 400], [575, 300]], dtype=np.float64),
+    np.array([[400, 100], [450, 50], [550, 50], [600, 100],
+              [550, 150], [450, 150]], dtype=np.float64)
+]
+
+class Player:
+    def __init__(self):
+        self.x = 653
+        self.y = 319
+        self.color = BLUE
+
+    def draw(self):
+        pygame.draw.circle(screen, self.color, (self.x, self.y), PLAYER_SIZE)
+
+    def respawn(self):
+        self.x = random.randint(50, WIDTH-50)
+        self.y = random.randint(50, HEIGHT-50)
+
+class Goal:
+    def __init__(self):
+        self.x = 105
+        self.y = 542
+        self.color = GREEN
+
+    def draw(self):
+        pygame.draw.circle(screen, self.color, (self.x, self.y), GOAL_SIZE)
+
+    def respawn(self):
+        self.x = random.randint(50, WIDTH-50)
+        self.y = random.randint(50, HEIGHT-50)
+
+pathfinder = Pathfinder(obstacles, player_radius=PLAYER_SIZE) 
+def test_get_move_direction():
+    for _ in range(1000):
+        current_pos = (653, 319)
+        target_pos = (105, 542)
+        pathfinder.get_move_direction(current_pos, target_pos)
+import cProfile
+def main():
+    running = True
+    clock = pygame.time.Clock()
+
+    player = Player()
+    goal = Goal()
+    iteration=0
+    
+    collision_checker = CollisionChecker(obstacles, player_radius=PLAYER_SIZE+2)
+    
+    while running:
+        iteration+=1
+        
+        if iteration%200==0:
+            # print(timeit.timeit(lambda: pathfinder.get_move_direction((player.x,player.y), (goal.x,goal.y)), number=1000)/1000)
+            cProfile.run('test_get_move_direction()', sort='cumtime')
+        screen.fill(WHITE)
+
+        # Draw obstacles
+        for poly in obstacles:
+            pygame.draw.polygon(screen, RED, poly, 0)
+            #pygame.draw.polygon(screen, BLACK, poly, 2)
+
+        # Draw player and goal
+        player.draw()
+        goal.draw()
+
+
+        # Handle input
+        keys = pygame.key.get_pressed()
+        dx, dy = 0, 0
+
+        if keys[pygame.K_LEFT]:
+            dx -= PLAYER_SPEED
+        if keys[pygame.K_RIGHT]:
+            dx += PLAYER_SPEED
+        if keys[pygame.K_UP]:
+            dy -= PLAYER_SPEED
+        if keys[pygame.K_DOWN]:
+            dy += PLAYER_SPEED
+
+        dx, dy = pathfinder.get_move_direction((player.x,player.y), (goal.x,goal.y))
+
+        dx, dy = np.array([dx, dy]) / np.linalg.norm([dx, dy]) * PLAYER_SPEED
+
+        new_x = player.x + dx
+        new_y = player.y + dy
+        if 0 <= new_x <= WIDTH and 0 <= new_y <= HEIGHT:
+            player.x = new_x
+            player.y = new_y
+
+        # Check goal reached
+        distance = math.hypot(player.x - goal.x, player.y - goal.y)
+        if distance < PLAYER_SIZE + GOAL_SIZE:
+            player.respawn()
+            while collision_checker.point_inside_obstacle((player.x,player.y)):
+                player.respawn()
+            goal.respawn()
+            while collision_checker.point_inside_obstacle((goal.x,goal.y)):
+                goal.respawn()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+        pygame.display.flip()
+        clock.tick(60)
+
+    pygame.quit()
+
+if __name__ == "__main__":
+    main()
